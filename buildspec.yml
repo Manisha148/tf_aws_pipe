@@ -5,6 +5,8 @@ phases:
     runtime-versions:
       python: 3.10
     commands:
+      - pwd
+      - ls
       - mkdir terraform
       - cd terraform
       - if [ ! -x "$(command -v terraform)" ]; then
@@ -15,6 +17,8 @@ phases:
       - terraform -version
   build:
     commands:
+      - ls
+      - pwd
       - echo Building Infrastructure with Terraform
       - cd terraform
       - terraform init
