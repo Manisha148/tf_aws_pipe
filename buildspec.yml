@@ -8,7 +8,7 @@ phases:
       - pwd
       - ls
       - mkdir terraform
-      - cd terraform
+#       - cd terraform
       - if [ ! -x "$(command -v terraform)" ]; then
           echo Installing Terraform;
           curl -sLo /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.1.4/terraform_1.1.4_linux_amd64.zip;
@@ -20,7 +20,7 @@ phases:
       - ls
       - pwd
       - echo Building Infrastructure with Terraform
-      - cd terraform
+#       - cd terraform
       - terraform init
       - terraform validate
       - terraform plan -out=tfplan || echo "terraform plan failed"
@@ -44,7 +44,7 @@ phases:
 #   build:
 #     commands:
 #       - echo Building Infrastructure with Terraform
-# #       - cd terraform
+#       - cd terraform
 #       - terraform init
 #       - terraform validate
 #       - terraform plan -out=tfplan || echo "terraform plan failed"
