@@ -46,95 +46,110 @@
 
 
 
+# Configure the AWS provider
 provider "aws" {
   region = "us-west-2"
 }
 
-resource "aws_s3_bucket" "example" {
-  bucket = "example-bucket"
-  acl    = "private"
-}
-
-resource "aws_vpc" "example" {
+# Create a VPC with CIDR block 10.0.0.0/16
+resource "aws_vpc" "my_vpc" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "example-vpc"
+    Name = "my_vpc"
   }
 }
 
-resource "aws_subnet" "example" {
-  vpc_id     = aws_vpc.example.id
+# Create a public subnet in the VPC
+resource "aws_subnet" "public_subnet" {
+  vpc_id     = aws_vpc.my_vpc.id
   cidr_block = "10.0.1.0/24"
 
   tags = {
-    Name = "example-subnet"
+    Name = "public_subnet"
   }
 }
 
-resource "aws_security_group" "example" {
-  name_prefix = "example"
-  vpc_id      = aws_vpc.example.id
+# Create an internet gateway and attach it to the VPC
+resource "aws_internet_gateway" "my_igw" {
+  vpc_id = aws_vpc.my_vpc.id
+
+  tags = {
+    Name = "my_igw"
+  }
+}
+
+# Create a route table and associate it with the VPC
+resource "aws_route_table" "my_rt" {
+  vpc_id = aws_vpc.my_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.my_igw.id
+  }
+
+  tags = {
+    Name = "my_rt"
+  }
+}
+
+# Associate the public subnet with the route table
+resource "aws_route_table_association" "public_subnet_assoc" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.my_rt.id
+}
+
+# Create an EC2 instance in the public subnet
+resource "aws_instance" "my_ec2" {
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.public_subnet.id
+
+  tags = {
+    Name = "my_ec2"
+  }
+}
+
+# Create an S3 bucket
+resource "aws_s3_bucket" "my_bucket" {
+  bucket = "my-bucket-name"
+
+  tags = {
+    Name = "my_bucket"
+  }
+}
+
+# Create an RDS instance in the VPC
+resource "aws_db_instance" "my_rds" {
+  allocated_storage    = 10
+  engine               = "mysql"
+  engine_version       = "5.7"
+  instance_class       = "db.t2.micro"
+  name                 = "my_rds"
+  username             = "admin"
+  password             = "password123"
+  parameter_group_name = "default.mysql5.7"
+  vpc_security_group_ids = [aws_security_group.my_sg.id]
+
+  tags = {
+    Name = "my_rds"
+  }
+}
+
+# Create a security group for the RDS instance
+resource "aws_security_group" "my_sg" {
+  name_prefix = "my_sg_"
+  vpc_id      = aws_vpc.my_vpc.id
 
   ingress {
-    from_port   = 22
-    to_port     = 22
+    from_port   = 3306
+    to_port     = 3306
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-resource "aws_instance" "example" {
-  ami           = "ami-0c55b159cbfafe1f0"
-  instance_type = "t2.micro"
-  key_name      = "example-key"
-  subnet_id     = aws_subnet.example.id
-  vpc_security_group_ids = [aws_security_group.example.id]
-
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    private_key = file("~/.ssh/example-key.pem")
-    host        = self.public_ip
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt-get update",
-      "sudo apt-get install -y nginx",
-      "sudo service nginx start"
-    ]
-  }
-}
-
-resource "aws_db_subnet_group" "example" {
-  name       = "example-db-subnet-group"
-  subnet_ids = [aws_subnet.example.id]
-
   tags = {
-    Name = "example-db-subnet-group"
-  }
-}
-
-resource "aws_db_instance" "example" {
-  engine               = "mysql"
-  engine_version       = "8.0.23"
-  instance_class       = "db.t2.micro"
-  allocated_storage    = 20
-  name                 = "example-db"
-  username             = "example-user"
-  password             = "example-password"
-  db_subnet_group_name = aws_db_subnet_group.example.name
-
-  tags = {
-    Name = "example-db"
+    Name = "my_sg"
   }
 }
 
